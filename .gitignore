@@ -1,0 +1,44 @@
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Python (backend) ---
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+
+# --- Node / Vite (frontend) ---
+node_modules/
+frontend/dist/
+.vite/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Env / secrets ---
+.env
+.env.local
+.env.*.local
+
+# --- Claude Code ---
+.claude/
+
+# --- Runtime / scratch ---
+*.tmp
+.cache/

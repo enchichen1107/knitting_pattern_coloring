@@ -23,12 +23,14 @@ export async function classify(
   rows: number,
   cols: number,
   symbols: number,
+  legend?: File | null,
 ): Promise<ClassifyResponse> {
   const form = new FormData();
   form.append("image", image);
   form.append("rows", String(rows));
   form.append("cols", String(cols));
   form.append("symbols", String(symbols));
+  if (legend) form.append("legend", legend);
   const res = await fetch("/api/classify", { method: "POST", body: form });
   return unwrap<ClassifyResponse>(res);
 }

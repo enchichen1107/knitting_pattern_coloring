@@ -14,6 +14,9 @@ export const translations = {
 
     uploadHeading: "Upload pattern",
     uploadFileLabel: "Pattern image (PNG / JPG)",
+    uploadLegendLabel: "Legend image (optional)",
+    uploadLegendHint:
+      "Upload the symbol legend from the pattern for higher classification accuracy. Without a legend, K-means auto-clustering is used.",
     rows: "Rows",
     cols: "Columns",
     symbols: "Distinct symbols",
@@ -44,6 +47,9 @@ export const translations = {
 
     uploadHeading: "上傳圖片",
     uploadFileLabel: "圖片檔案（PNG / JPG）",
+    uploadLegendLabel: "符號對照表(選填)",
+    uploadLegendHint:
+      "上傳圖片的符號對照表可提升分類準確度。未提供時將使用 K-means 自動分群。",
     rows: "列數",
     cols: "欄數",
     symbols: "符號種類數",

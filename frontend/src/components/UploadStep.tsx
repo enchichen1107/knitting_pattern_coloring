@@ -10,6 +10,7 @@ interface Props {
 export default function UploadStep({ onClassified }: Props) {
   const { t } = useT();
   const [image, setImage] = useState<File | null>(null);
+  const [legend, setLegend] = useState<File | null>(null);
   const [rows, setRows] = useState(10);
   const [cols, setCols] = useState(86);
   const [symbols, setSymbols] = useState(14);
@@ -22,7 +23,7 @@ export default function UploadStep({ onClassified }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const result = await classify(image, rows, cols, symbols);
+      const result = await classify(image, rows, cols, symbols, legend);
       onClassified(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -43,6 +44,17 @@ export default function UploadStep({ onClassified }: Props) {
             onChange={(e) => setImage(e.target.files?.[0] ?? null)}
             required
           />
+        </label>
+        <label>
+          <span className="label-text">{t("uploadLegendLabel")}</span>
+          <input
+            type="file"
+            accept="image/png,image/jpeg"
+            onChange={(e) => setLegend(e.target.files?.[0] ?? null)}
+          />
+          <p className="muted" style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}>
+            {t("uploadLegendHint")}
+          </p>
         </label>
         <div className="row">
           <label>

@@ -17,6 +17,7 @@ async def classify(
     rows: int = Form(...),
     cols: int = Form(...),
     symbols: int = Form(...),
+    legend: UploadFile | None = File(None),
 ) -> ClassifyResponse:
     image_bytes = await image.read()
     if len(image_bytes) > MAX_IMAGE_BYTES:
@@ -24,8 +25,27 @@ async def classify(
     if not image_bytes:
         raise HTTPException(status_code=400, detail="Empty image upload")
 
+    legend_bytes: bytes | None = None
+    if legend is not None:
+        legend_bytes = await legend.read()
+        if len(legend_bytes) > MAX_IMAGE_BYTES:
+            raise HTTPException(status_code=413, detail="Legend exceeds 10 MB limit")
+        if not legend_bytes:
+            legend_bytes = None
+
     try:
-        result = core.classify_image(image_bytes, rows=rows, cols=cols, symbols=symbols)
+        if legend_bytes:
+            result = core.classify_image_with_legend(
+                image_bytes,
+                legend_bytes,
+                rows=rows,
+                cols=cols,
+                symbols=symbols,
+            )
+        else:
+            result = core.classify_image(
+                image_bytes, rows=rows, cols=cols, symbols=symbols
+            )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

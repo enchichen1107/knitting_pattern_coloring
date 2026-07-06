@@ -172,9 +172,11 @@ ResultStep    image + download (PNG, CSV)
 
 ---
 
-## Verify (regression spot-checks)
+## Verify 1 (regression spot-checks)
 
 Expected values for selected columns of `image.png` (1-based, rows 1–10):
+image.png is 10 rows, 86 cols
+See ./refs for each encoded pattern of A to N (each alphabet is a knitting pattern, ex: N represents a solid big circle)
 
 | Col | Values |
 |---|---|
@@ -196,6 +198,49 @@ Expected values for selected columns of `image.png` (1-based, rows 1–10):
 | 63 | B G B B B G G B G G |
 | 84 | A A G G G A A A A A |
 | 86 | J J J J J J J J J J |
+
+
+## Verify 2 (regression spot-checks)
+
+Expected values for selected columns of `test2.png` (1-based, cols 1–27):
+test2.png is 74 rows, 27 cols
+Below are encoded using `test2_classify_ans.png`, in this png you can find what does A to L represents,
+ex: H is a solid big circle
+Noticed that from row 25~55, a light gray watermark has been added
+
+| Row | Values |
+|---|---|
+| 1 | G J J G G J J G G J J G G J J G G J J G G J J G G J J |
+| 4 | E A E E E A E E E A E E E A E E E A E E E A E E E A E |
+| 6 | B B B B B B B B B B B B B B B B B B B B B B B B B B B |
+| 8 | D D B B B B B B B D D D B B B B B B B D D B D D B B B |
+| 9 | I I B B B B B B B B I B B B B B B B B I I B I I B B B |
+| 10 | C E E E C C C C E E E E E C C C C E E E C C C E E E C |
+| 12 | H D D D D D H H H D D D H H H D D D D D H H H D D D D |
+| 15 | I I B B B B B B B B I B B B B B B B B I I B I I B B B |
+| 16 | D D B B B B B B B D D D B B B B B B B D D B D D B B B |
+| 17 | D B B B B B B B B B D B B B B B B B B B D B D B B B B |
+| 18 | B B B B B B B B B B B B B B B B B B B B B B B B B B B |
+| 19 | K F K F K F K F K F K F K F K F K F K F K F K F K F K |
+| 20 | F K F F F K F F F K F F F K F F F K F F F K F F F K F |
+| 21 | K F K F K F K F K F K F K F K F K F K F K F K F K F K |
+| 22 | A A A A A A A A A A A A A A A A A A A A A A A A A A A |
+| 24 | G G G A G G G A G G G A G G G A G G G A G G G A G G G |
+| 26 | C G G G C G C G G G C C C G G G C G C G G G C C C G G |
+| 27 | E E G E G G G E G E E E E E G E G G G E G E E E E E G |
+| 28 | E G E G G G G G E G E E E G E G G G G G E G E E E G E |
+| 50 | F A F F F A F F F A F F F A F F F A F F F A F F F A F |
+| 51 | A A A I A A A I A A A I A A A I A A A I A A A I A A A |
+| 52 | J H J J J H J J J H J J J H J J J H J J J H J J J H J |
+| 53 | A J A J A J A J A J A J A J A J A J A J A J A J A J A |
+| 54 | J J J A J J J A J J J A J J J A J J J A J J J A J J J |
+| 55 | J J J J J J J J J J J J J J J J J J J J J J J J J J J |
+| 56 | Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q Q |
+| 57 | K B K K K B K K K B K K K B K K K B K K K B K K K B K |
+| 59 | B B B B B B B B B B B B B B B B B B B B B B B B B B B |
+| 60 | C C C C C C C C C C C C C C C C C C C C C C C C C C C |
+
+**Note on `Q` (row 56):** the `Q` glyph is pixel-identical to `K`'s U glyph (same shape, position, and color — verified by pixel diff). The Q/K distinction existed only as a yarn colour in the original coloured pattern, which the black-and-white chart does not encode, so no classifier can recover it. The chart physically contains the 11 legend symbols A–K; tests classify `test2.png` with `symbols=11` and expect row 56 to come back as `K`.
 
 **Note:** Cluster labels A–N are assigned in K-means order, which is arbitrary. The web app handles this by surfacing the auto-extracted representative crops so the user can map them to colours by sight.
 

@@ -49,6 +49,8 @@ VERIFY1_COLS = {
 # chart does not encode), so it is expected to classify as K.
 VERIFY2_ROWS = {
     1:  "G J J G G J J G G J J G G J J G G J J G G J J G G J J",
+    2:  "G J J G G J J G G J J G G J J G G J J G G J J G G J J",
+    3:  "A E A E A E A E A E A E A E A E A E A E A E A E A E A",
     4:  "E A E E E A E E E A E E E A E E E A E E E A E E E A E",
     6:  "B B B B B B B B B B B B B B B B B B B B B B B B B B B",
     8:  "D D B B B B B B B D D D B B B B B B B D D B D D B B B",
@@ -77,6 +79,13 @@ VERIFY2_ROWS = {
     57: "K B K K K B K K K B K K K B K K K B K K K B K K K B K",
     59: "B B B B B B B B B B B B B B B B B B B B B B B B B B B",
     60: "C C C C C C C C C C C C C C C C C C C C C C C C C C C",
+    # rows 62 and 67 exercise _refine_grid: each contains a cell whose
+    # cluster assignment breaks the row's repeating motif until refined
+    62: "D D D C D D D C D D D C D D D C D D D C D D D C D D D",
+    67: "I A I I A A A I I A I I A A A I I A I I A A A I I A I",
+    70: "E E E C E E E C E E E C E E E C E E E C E E E C E E E",
+    71: "C E C C C E C C C E C C C E C C C E C C C E C C C E C",
+    72: "D D D C D D D C D D D C D D D C D D D C D D D C D D D",
 }
 
 

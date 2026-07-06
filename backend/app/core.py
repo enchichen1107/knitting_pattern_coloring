@@ -25,8 +25,16 @@ MAX_SYMBOLS = 26        # A–Z
 INK_VALLEY_FRAC = 0.01  # histogram-valley cutoff relative to the ink peak
 FEATURE_BLUR_SIGMA = 1.5  # softens ±1 px grid-rounding offsets
 
+# Periodic-pattern refinement knobs (see _refine_grid)
+REFINE_MAX_PERIOD = 12   # largest horizontal motif period considered
+REFINE_MIN_AGREE = 0.85  # row must be this periodic for refinement
+REFINE_TOLERANCE = 2.0   # pixel-distance slack for accepting a pattern fix
+REFINE_MAX_PASSES = 3    # wrong witnesses can unblock after other fixes
+
 # Overcluster-then-merge knobs (see classify_image)
 OVERCLUSTER_EXTRA = 6   # surplus K-means clusters absorbing context splits
+BAR_DEPTH = 3           # border rows/cols checked for boundary bars
+BAR_SPAN_FRAC = 0.8     # ink fraction that marks a line as a boundary bar
 MATCH_SHIFT = 4         # ± translation search in _glyph_dist (tile px)
 FILL_MARGIN = 4         # central-window inset for the fill channel
 EDGE_MARGIN = 8         # deeper inset for the edge channel
@@ -153,6 +161,30 @@ def _remove_grid_lines(binary: np.ndarray, ch: float, cw: float) -> np.ndarray:
     return out
 
 
+def _strip_boundary_bars(cell_bin: np.ndarray) -> np.ndarray:
+    """Clear near-full-length ink lines hugging the cell border.
+
+    A row/column of ink spanning most of the cell right at its edge is a
+    grid-line remnant or a neighbouring solid cell bleeding across the
+    boundary — never glyph: the widest glyph strokes span ~75 % of a
+    cell. Solid cells lose a uniform frame, which is consistent across
+    all of them and therefore harmless to clustering.
+    """
+    h, w = cell_bin.shape
+    ink = cell_bin < 128
+    out = cell_bin.copy()
+    for i in range(BAR_DEPTH):
+        if ink[i].mean() >= BAR_SPAN_FRAC:
+            out[i] = 255
+        if ink[h - 1 - i].mean() >= BAR_SPAN_FRAC:
+            out[h - 1 - i] = 255
+        if ink[:, i].mean() >= BAR_SPAN_FRAC:
+            out[:, i] = 255
+        if ink[:, w - 1 - i].mean() >= BAR_SPAN_FRAC:
+            out[:, w - 1 - i] = 255
+    return out
+
+
 def _cell_tile(cell_bin: np.ndarray) -> np.ndarray:
     """Normalized CELL_SIZE tile of one binarized cell.
 
@@ -161,7 +193,8 @@ def _cell_tile(cell_bin: np.ndarray) -> np.ndarray:
     neighbour overflow) is part of the signal and must not be discarded
     by centering or bbox cropping.
     """
-    return cv2.resize(cell_bin, (CELL_SIZE, CELL_SIZE), interpolation=cv2.INTER_AREA)
+    cleaned = _strip_boundary_bars(cell_bin)
+    return cv2.resize(cleaned, (CELL_SIZE, CELL_SIZE), interpolation=cv2.INTER_AREA)
 
 
 def _cell_feature(tile: np.ndarray) -> np.ndarray:
@@ -219,6 +252,59 @@ def _glyph_dist(a: np.ndarray, b: np.ndarray) -> float:
     return best + MASS_WEIGHT * abs(float(np.log(wa / wb)))
 
 
+def _refine_grid(
+    grid: list[list[str]],
+    X: np.ndarray,
+    centroids: dict[str, np.ndarray],
+    rows: int,
+    cols: int,
+) -> int:
+    """Fix isolated cells that break their row's repeating motif.
+
+    Knitting charts repeat horizontally with a short period, so a lone
+    cell disagreeing with all its periodic witnesses is almost certainly
+    a misclassification (typically a borderline cell dragged into the
+    wrong cluster by section-line residue). A row is only considered
+    when it is strongly periodic, and a cell is only flipped when every
+    witness agrees on one label AND the cell's own pixels are compatible
+    with it — pattern evidence overrides the cluster assignment, not the
+    image. Returns the number of cells changed.
+    """
+    fixed = 0
+    for _ in range(REFINE_MAX_PASSES):
+        changed = 0
+        for r in range(rows):
+            row = grid[r]
+            best_p, best_agree = 0, 0.0
+            for p in range(2, min(REFINE_MAX_PERIOD, cols // 2) + 1):
+                agree = sum(row[c] == row[c + p] for c in range(cols - p)) / (cols - p)
+                if agree > best_agree:
+                    best_p, best_agree = p, agree
+            if best_agree < REFINE_MIN_AGREE:
+                continue
+            p = best_p
+            for c in range(cols):
+                witnesses = [
+                    row[c + d] for d in (-2 * p, -p, p, 2 * p)
+                    if 0 <= c + d < cols
+                ]
+                if len(witnesses) < 2 or row[c] in witnesses:
+                    continue
+                if any(w != witnesses[0] for w in witnesses):
+                    continue
+                suggested = witnesses[0]
+                vec = X[r * cols + c]
+                d_sug = float(np.linalg.norm(vec - centroids[suggested]))
+                d_cur = float(np.linalg.norm(vec - centroids[row[c]]))
+                if d_sug <= d_cur * REFINE_TOLERANCE:
+                    row[c] = suggested
+                    changed += 1
+        fixed += changed
+        if not changed:
+            break
+    return fixed
+
+
 # ---------------------------------------------------------------------------
 # Classify
 # ---------------------------------------------------------------------------
@@ -261,9 +347,11 @@ def classify_image(
     # Overcluster, then merge back down to `symbols`. K-means splits a
     # symbol when its cells differ in rendering context (watermark bands,
     # neighbouring solid cells, glyph strokes fused with grid lines);
-    # surplus clusters absorb those splits, and complete-linkage
-    # agglomeration under _glyph_dist reunites them without letting a
-    # merged group drift into a genuinely different symbol.
+    # surplus clusters absorb those splits, and single-linkage
+    # agglomeration under _glyph_dist reunites them: a symbol split three
+    # ways may have one variant close to only one of its siblings, so
+    # groups must chain through the nearest member. Distances are frozen
+    # at the initial clusters, so a merged group cannot drift.
     k = min(symbols + OVERCLUSTER_EXTRA, len(tiles))
     km = KMeans(n_clusters=k, random_state=42, n_init=20)
     km.fit(X)
@@ -285,7 +373,7 @@ def classify_image(
     members: dict[int, set[int]] = {cid: {cid} for cid in cids}
 
     def group_dist(a: int, b: int) -> float:
-        return max(
+        return min(
             pair_d[(x, y) if x < y else (y, x)]
             for x in members[a] for y in members[b]
         )
@@ -306,8 +394,10 @@ def classify_image(
     label_names = [chr(ord("A") + i) for i in range(symbols)]
     grid: list[list[str]] = [["?"] * cols for _ in range(rows)]
     crops: list[RefCrop] = []
+    centroids: dict[str, np.ndarray] = {}
     for lbl, (cid, idx) in zip(label_names, sorted(groups.items())):
         mean_vec = X[idx].mean(axis=0)
+        centroids[lbl] = mean_vec
         rep_i = idx[int(np.argmin(np.linalg.norm(X[idx] - mean_vec, axis=1)))]
         r, c = divmod(int(rep_i), cols)
         rep = cv2.getRectSubPix(img, win, ((c + 0.5) * cw, (r + 0.5) * ch))
@@ -315,6 +405,8 @@ def classify_image(
         for i in idx:
             rr, cc = divmod(int(i), cols)
             grid[rr][cc] = lbl
+
+    _refine_grid(grid, X, centroids, rows, cols)
 
     return ClassifyResult(
         rows=rows,

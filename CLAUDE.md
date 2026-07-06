@@ -211,6 +211,8 @@ Noticed that from row 25~55, a light gray watermark has been added
 | Row | Values |
 |---|---|
 | 1 | G J J G G J J G G J J G G J J G G J J G G J J G G J J |
+| 2 | G J J G G J J G G J J G G J J G G J J G G J J G G J J |
+| 3 | A E A E A E A E A E A E A E A E A E A E A E A E A E A |
 | 4 | E A E E E A E E E A E E E A E E E A E E E A E E E A E |
 | 6 | B B B B B B B B B B B B B B B B B B B B B B B B B B B |
 | 8 | D D B B B B B B B D D D B B B B B B B D D B D D B B B |
@@ -239,6 +241,9 @@ Noticed that from row 25~55, a light gray watermark has been added
 | 57 | K B K K K B K K K B K K K B K K K B K K K B K K K B K |
 | 59 | B B B B B B B B B B B B B B B B B B B B B B B B B B B |
 | 60 | C C C C C C C C C C C C C C C C C C C C C C C C C C C |
+| 70 | E E E C E E E C E E E C E E E C E E E C E E E C E E E |
+| 71 | C E C C C E C C C E C C C E C C C E C C C E C C C E C |
+| 72 | D D D C D D D C D D D C D D D C D D D C D D D C D D D |
 
 **Note on `Q` (row 56):** the `Q` glyph is pixel-identical to `K`'s U glyph (same shape, position, and color — verified by pixel diff). The Q/K distinction existed only as a yarn colour in the original coloured pattern, which the black-and-white chart does not encode, so no classifier can recover it. The chart physically contains the 11 legend symbols A–K; tests classify `test2.png` with `symbols=11` and expect row 56 to come back as `K`.
 
